@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>No sabIA — modo IA real</title>
+<style>
+  :root{
+    --bg-0:#0a0416;
+    --glow:#8b5cf6;
+    --glow-soft:#b794f6;
+    --panel:#1c1030;
+    --panel-border:#3a2564;
+    --text:#f2eefc;
+    --text-dim:#9d8fc2;
+    --bubble-user:#3a2564;
+    --bubble-user-border:#55388f;
+    --bubble-bot:#150a2c;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(ellipse 60% 45% at 50% 20%, rgba(139,92,246,0.35), transparent 70%),
+      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(80,30,140,0.25), transparent 70%),
+      var(--bg-0);
+    color:var(--text);
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:space-between;
+    padding:min(4vh,20px) 16px calc(14px + env(safe-area-inset-bottom));
+    overflow:hidden;
+  }
+
+  .brand{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    margin-top:4vh;
+    transition:opacity .5s ease, margin .5s ease;
+  }
+  .brand.compact{margin-top:6px;}
+
+  .logo-wrap{
+    position:relative;
+    width:150px;
+    height:150px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    filter:drop-shadow(0 0 22px rgba(178,140,255,0.85)) drop-shadow(0 0 55px rgba(139,92,246,0.5));
+    transition:width .5s ease, height .5s ease;
+  }
+  .brand.compact .logo-wrap{width:58px;height:58px;}
+  .logo-wrap svg{width:100%;height:100%;}
+  .spark{
+    position:absolute;
+    color:#e7defc;
+    filter:drop-shadow(0 0 6px rgba(230,220,255,0.9));
+  }
+  .spark.s1{top:8px;left:14px;font-size:20px;}
+  .spark.s2{top:2px;right:22px;font-size:14px;}
+  .spark.s3{bottom:14px;left:8px;font-size:12px;}
+  .brand.compact .spark{display:none;}
+
+  .brand-title{
+    margin-top:14px;
+    font-size:28px;
+    font-weight:800;
+    letter-spacing:.5px;
+    color:#f6f3ff;
+    text-shadow:0 0 18px rgba(178,140,255,0.6);
+  }
+  .brand.compact .brand-title{font-size:15px;margin-top:6px;}
+  .brand-sub{
+    margin-top:4px;
+    font-size:12px;
+    color:var(--text-dim);
+    letter-spacing:.3px;
+  }
+  .brand.compact .brand-sub{display:none;}
+
+  .chat-scroll{
+    width:100%;
+    max-width:640px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding:12px 4px 20px;
+    overflow-y:auto;
+    scroll-behavior:smooth;
+    min-height:0;
+  }
+  .msg{
+    max-width:82%;
+    padding:12px 16px;
+    border-radius:16px;
+    line-height:1.5;
+    font-size:15px;
+    white-space:pre-wrap;
+    animation:pop .25s ease;
+  }
+  @keyframes pop{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .msg.user{
+    align-self:flex-end;
+    background:var(--bubble-user);
+    border:1px solid var(--bubble-user-border);
+    border-bottom-right-radius:4px;
+  }
+  .msg.bot{
+    align-self:flex-start;
+    background:var(--bubble-bot);
+    border:1px solid var(--panel-border);
+    border-bottom-left-radius:4px;
+    box-shadow:0 0 18px rgba(139,92,246,0.15);
+  }
+  .msg.bot .tag{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.06em;
+    color:var(--glow-soft);
+    margin-bottom:4px;
+    text-transform:uppercase;
+  }
+  .msg.error{
+    align-self:flex-start;
+    background:#3a1030;
+    border:1px solid #7d3a5e;
+    color:#ffd0e6;
+  }
+  .msg img{
+    max-width:340px;
+    width:100%;
+    display:block;
+    border-radius:10px;
+    margin-top:8px;
+  }
+
+  .typing-dots{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 2px;
+  }
+  .typing-dots span{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--glow-soft);
+    box-shadow:0 0 6px rgba(178,140,255,0.8);
+    animation:blink 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2){animation-delay:.2s;}
+  .typing-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{
+    0%, 80%, 100%{opacity:.25; transform:translateY(0);}
+    40%{opacity:1; transform:translateY(-3px);}
+  }
+
+  .input-bar{
+    width:100%;
+    max-width:640px;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:999px;
+    padding:12px 8px 12px 20px;
+    box-shadow:0 0 30px rgba(139,92,246,0.18);
+    flex:0 0 auto;
+  }
+  .input-bar input{
+    flex:1;
+    min-width:0;
+    width:0;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--text);
+    font-size:15px;
+  }
+  .input-bar input::placeholder{color:var(--text-dim);}
+  .input-bar input:disabled{color:var(--text-dim);}
+
+  .send-btn{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:linear-gradient(135deg,#7c3aed,#a78bfa);
+    border:none;
+    color:#fff;
+    font-weight:700;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+    box-shadow:0 0 16px rgba(139,92,246,0.6);
+    transition:transform .15s ease;
+  }
+  .send-btn:hover{transform:translateY(-1px);}
+  .send-btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+  .send-btn svg{width:15px;height:15px;fill:#fff; flex:0 0 auto;}
+
+  footer.hint{
+    color:var(--text-dim);
+    font-size:11px;
+    margin-top:10px;
+    text-align:center;
+    flex:0 0 auto;
+  }
+
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-thumb{background:#4a2f80; border-radius:4px;}
+</style>
+</head>
+<body>
+
+  <div class="brand" id="brand">
+    <div class="logo-wrap">
+      <span class="spark s1">✦</span>
+      <span class="spark s2">✧</span>
+      <span class="spark s3">✦</span>
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="1" stop-color="#cdb8ff"/>
+          </linearGradient>
+        </defs>
+        <path d="M18 150 L18 55 L34 55 L70 120 L70 55 L86 55 L86 150 L70 150 L34 85 L34 150 Z" fill="url(#g1)"/>
+        <path d="M112 165 L142 40 L156 40 L126 165 Z" fill="url(#g1)"/>
+        <path d="M150 55
+                 C168 55 180 68 180 85
+                 C180 96 175 103 168 109
+                 C177 113 184 122 184 134
+                 C184 152 170 165 150 165
+                 C138 165 128 160 122 151
+                 L134 141
+                 C138 147 143 151 150 151
+                 C160 151 168 144 168 134
+                 C168 125 161 119 152 118
+                 L152 106
+                 C160 105 166 99 166 90
+                 C166 81 159 75 150 75
+                 C144 75 139 78 135 83
+                 L124 74
+                 C131 62 140 55 150 55 Z" fill="url(#g1)"/>
+      </svg>
+    </div>
+    <div class="brand-title">No sabIA</div>
+    <div class="brand-sub">Pregúntale cualquier cosa absurda</div>
+  </div>
+
+  <div class="chat-scroll" id="chatScroll"></div>
+
+  <div style="width:100%; display:flex; flex-direction:column; align-items:center;">
+    <div class="input-bar" id="inputBar">
+      <input type="text" id="chatInput" placeholder="Pregúntame lo que quieras..." autocomplete="off">
+      <button class="send-btn" id="sendBtn">
+        Enviar
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <footer class="hint">No sabIA puede cometer errores (y de hecho se enorgullece de eso).</footer>
+  </div>
+
+<script>
+// ---------- BASE DE DATOS DE TUS MEMES ----------
+// Ajusta los nombres de archivo según las imágenes que tengas en tu carpeta "memes"
+const MEMES = [
+  {
+    id: "monkey",
+    desc: "Mono con cara de decepción, facepalm o incredulidad ante algo que salió mal.",
+    url: "/memes/monkey.jpg"
+  },
+  {
+    id: "coffee_man",
+    desc: "Señor sonriendo tomando café frente a su laptop, fingiendo calma o normalidad absurda.",
+    url: "/memes/coffee_man.jpg"
+  },
+  {
+    id: "rocky",
+    desc: "Hombre señalándose la sien con el dedo. Para decisiones obvias o ironía tipo genio.",
+    url: "/memes/rocky.jpg"
+  },
+  {
+    id: "fire_dog",
+    desc: "Perro sentado en habitación en llamas diciendo que todo está bien. Para desastre total ignorado con calma.",
+    url: "/memes/fire_dog.jpg"
+  }
+];
+
+function memeSrc(m){ 
+  return m.url; 
+}
+
+// ---------- UI HELPERS ----------
+const brand = document.getElementById('brand');
+const chatScroll = document.getElementById('chatScroll');
+const input = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+
+let chatStarted = false;
+function ensureChatStarted(){
+  if(!chatStarted){
+    chatStarted = true;
+    brand.classList.add('compact');
+  }
+}
+
+function addMessage(text, who, opts={}){
+  const div = document.createElement('div');
+  div.className = 'msg ' + who;
+  if(who === 'bot' && !opts.noTag){
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = 'No sabIA';
+    div.appendChild(tag);
+  }
+  if(text){
+    const p = document.createElement('div');
+    p.textContent = text;
+    div.appendChild(p);
+  }
+  if(opts.img){
+    const img = document.createElement('img');
+    img.src = opts.img;
+    img.onload = () => { chatScroll.scrollTop = chatScroll.scrollHeight; };
+    div.appendChild(img);
+  }
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+  return div;
+}
+
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.textContent = 'No sabIA';
+  div.appendChild(tag);
+  const dots = document.createElement('div');
+  dots.className = 'typing-dots';
+  dots.innerHTML = '<span></span><span></span><span></span>';
+  div.appendChild(dots);
+  chatScroll.appendChild(div);
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+  return div;
+}
+
+// ---------- LLAMADA AL BACKEND SEGURO (/api/chat) ----------
+async function askAI(question){
+  const memeList = MEMES.map(m => `- id: "${m.id}" → ${m.desc}`).join('\n');
+
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, memeList })
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || "Error en la respuesta del servidor");
+  }
+
+  const parsed = await res.json();
+  return parsed;
+}
+
+async function handleSend(){
+  const question = input.value.trim();
+  if(!question || sendBtn.disabled) return;
+
+  ensureChatStarted();
+  addMessage(question, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+
+  const typingEl = showTyping();
+
+  try{
+    const result = await askAI(question);
+    typingEl.remove();
+
+    const meme = MEMES.find(m => m.id === result.meme_id) || MEMES[0];
+    addMessage(result.response || "...", 'bot', { img: memeSrc(meme) });
+
+  } catch(err){
+    typingEl.remove();
+    addMessage("Se me cruzaron los cables (falló la conexión con la IA). Intenta de nuevo.", 'error', {noTag:true});
+    console.error(err);
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+sendBtn.addEventListener('click', handleSend);
+input.addEventListener('keydown', e=>{
+  if(e.key === 'Enter') handleSend();
+});
+</script>
+</body>
+</html>
